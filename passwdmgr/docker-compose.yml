@@ -1,0 +1,46 @@
+version: "3.8"
+
+# generate self-signed ssl cert
+# openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
+# Remember to create superuser
+# docker exec -it passwdmgr_gunicorn_1 bash
+# python manage.py createsuperuser
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "443:443"
+    volumes:
+      - ./config/nginx/conf.d:/etc/nginx/conf.d
+      - static_volume:/code/static
+      - media_volume:/code/media
+      - ./config/nginx/certs/:/etc/nginx/certs
+      #- ./config/certbot/conf:/etc/letsencrypt
+      #- ./config/certbot/www:/code/certbot
+    depends_on: 
+      - gunicorn
+
+  #certbot:
+  #  image:certbot/certbot
+  #  volumes:
+  #    - ./config/certbot/conf:/etc/letsencrypt
+  #    - ./config/certbot/www:/code/certbot
+  
+  gunicorn:
+    build:
+      context: ./
+      args:
+        PIP_REQUIREMENTS: requirements.txt
+    command: gunicorn --workers 3 --bind 0.0.0.0:8000 passwdmgr.wsgi:application
+    volumes:
+      - static_volume:/code/static
+      - media_volume:/code/media
+    expose:
+      - "8000"
+    environment:
+      DJANGO_SETTINGS_MODULE: "passwdmgr.settings"
+
+volumes:
+    static_volume:
+    media_volume:

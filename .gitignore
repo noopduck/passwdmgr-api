@@ -1,0 +1,4 @@
+__pycache__
+migrations
+*.pem
+db.sqlite3
